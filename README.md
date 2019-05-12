@@ -1,1 +1,1 @@
-# neo4j-similarity-algorithms
+# Similarity algorithms

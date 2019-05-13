@@ -6,7 +6,7 @@ WITH {item:id(c), categories: collect(id(i))} as simiData
 WITH collect(simiData) as data
 // Stream similar cases 
 CALL algo.similarity.jaccard.stream(data, {
-    topK:10, similarityCutoff: 0.1
+    topK:1, similarityCutoff: 0.1
 })
 YIELD item1, item2, count1, count2, similarity
 // Look up nodes by node id
@@ -26,7 +26,10 @@ WITH {item:id(c), categories: collect(id(i))} AS simiData
 WITH collect(simiData) AS data
 // Store similar cases together 
 CALL algo.similarity.jaccard(data, {
-    topK:10, similarityCutoff: 0.1, write:true
+    topK:1, 
+    similarityCutoff: 0.1, 
+    write:true,
+    writeRelationshipType: 'JACCARD_SIMILAR'
 })
 YIELD nodes, similarityPairs, write, writeRelationshipType, writeProperty, 
             min, max, mean, stdDev, 
@@ -46,7 +49,7 @@ CALL algo.louvain.stream(
      WITH {item:id(c), categories: collect(id(i))} AS simiData
      WITH collect(simiData) AS data
      CALL algo.similarity.jaccard.stream(data, {
-         topK:10, similarityCutoff: 0.1, write:false
+         topK:1, similarityCutoff: 0.1, write:false
      })
      YIELD item1, item2, similarity
      RETURN item1 AS source, item2 AS target', 
@@ -73,6 +76,6 @@ RETURN path
 LIMIT 30
 
 
-// Delete the relationship of type SIMILAR
-MATCH ()-[r:SIMILAR]-() 
+// Delete the relationship
+MATCH ()-[r:JACCARD_SIMILAR]-() 
 DELETE r

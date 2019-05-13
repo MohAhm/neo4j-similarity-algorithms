@@ -2,13 +2,40 @@
 // #1
 // === Start === 
 // Louvain algorithm
-CALL algo.louvain.stream('DECISION_CASE', 'SIMILAR', {})
+CALL algo.louvain.stream('DECISION_CASE', 'SIMILAR', { iterations: 10 })
 YIELD nodeId, community
 
 WITH algo.asNode(nodeId) AS cases, community
 RETURN cases.name, community
 ORDER BY community
 // === End ===
+
+
+// === Start === 
+// Louvain Modularity
+CALL algo.louvain.stream('DECISION_CASE', 'SIMILAR', {includeIntermediateCommunities: true})
+YIELD nodeId, communities
+
+WITH algo.asNode(nodeId) AS case, communities
+RETURN case.name, communities
+ORDER BY communities
+
+
+CALL algo.louvain.stream("DECISION_CASE", "SIMILAR", {includeIntermediateCommunities: true})
+YIELD nodeId, communities
+WITH algo.asNode(nodeId) AS case, communities
+SET case.communities = communities
+
+
+MATCH (c:DECISION_CASE)
+RETURN c.communities[-1] AS community, collect(c.name) AS cases
+ORDER BY size(cases) DESC
+
+MATCH (c:DECISION_CASE)
+RETURN c.communities[0] AS community, collect(c.name) AS cases
+ORDER BY size(cases) DESC
+// === End ===
+
 
 
 // #2

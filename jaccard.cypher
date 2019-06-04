@@ -1,19 +1,21 @@
 
+MATCH (c1:DECISION_CASE { name: 'Case 1' }), (c2:DECISION_CASE  { name: 'Case 2' })-[]->(i)
+RETURN c1, c2, i
+
 // === Start === 
 // Create list of nodes ids of cases with any type of relationship
-MATCH (c:DECISION_CASE)-[*]->(i)
-WITH {item:id(c), categories: collect(id(i))} as simiData
-WITH collect(simiData) as data
+MATCH (c:DECISION_CASE)-[]->(i)
+WITH {item:id(c), categories: collect(id(i))} AS simiData
+WITH collect(simiData) AS data
 // Stream similar cases 
 CALL algo.similarity.jaccard.stream(data, {
     topK:1, similarityCutoff: 0.1
 })
 YIELD item1, item2, count1, count2, similarity
-// Look up nodes by node id
-WITH algo.asNode(item1) AS c1, 
-     algo.asNode(item2) AS c2, 
-     similarity
-RETURN c1.name, c2.name, similarity
+
+RETURN algo.asNode(item1).name AS A, 
+       algo.asNode(item2).name AS B, 
+       similarity
 ORDER BY similarity DESC
 // === End ===
 
@@ -21,15 +23,15 @@ ORDER BY similarity DESC
 
 // === Start === 
 // Create list of nodes ids of cases with any type of relationship
-MATCH (c:DECISION_CASE)-[*]->(i)
+MATCH (c:DECISION_CASE)-[]->(i)
+// WHERE type(r) <> "SIMILAR"
 WITH {item:id(c), categories: collect(id(i))} AS simiData
 WITH collect(simiData) AS data
 // Store similar cases together 
 CALL algo.similarity.jaccard(data, {
     topK:1, 
     similarityCutoff: 0.1, 
-    write:true,
-    writeRelationshipType: 'JACCARD_SIMILAR'
+    write:true
 })
 YIELD nodes, similarityPairs, write, writeRelationshipType, writeProperty, 
             min, max, mean, stdDev, 
@@ -45,7 +47,7 @@ RETURN nodes, similarityPairs, write, writeRelationshipType, writeProperty,
 // Chaining algorithms: Jaccard + Louvain
 CALL algo.louvain.stream(
     'MATCH (c:DECISION_CASE) RETURN id(c) as id', 
-    'MATCH (c:DECISION_CASE)-[*]->(i)
+    'MATCH (c:DECISION_CASE)-[]->(i)
      WITH {item:id(c), categories: collect(id(i))} AS simiData
      WITH collect(simiData) AS data
      CALL algo.similarity.jaccard.stream(data, {
@@ -76,6 +78,9 @@ RETURN path
 LIMIT 30
 
 
+CALL algo.louvain('DECISION_CASE', 'JACCARD_SIMILAR')
+YIELD nodes,communityCount
+
 // Delete the relationship
-MATCH ()-[r:JACCARD_SIMILAR]-() 
+MATCH ()-[r:SIMILAR]-() 
 DELETE r

@@ -1,15 +1,14 @@
 
 // === Start === 
-MATCH (c:DECISION_CASE)
-OPTIONAL MATCH (c)-[r]->(i)
-WITH {item:id(c), weights: collect(coalesce(id(r), algo.NaN()))} as simiData
-WITH collect(simiData) as data
+MATCH (c:DECISION_CASE)-[r]->()
+WITH {item:id(c), weights: collect(id(r))} AS simiData
+WITH collect(simiData) AS data
 CALL algo.similarity.pearson.stream(data, {
     topK:1, similarityCutoff: 0.1
 })
 YIELD item1, item2, count1, count2, similarity
-RETURN  algo.asNode(item1).name AS c1, 
-        algo.asNode(item2).name AS c2, 
+RETURN  algo.asNode(item1).name AS A, 
+        algo.asNode(item2).name AS B, 
         similarity
 ORDER BY similarity DESC
 // === End ===
@@ -17,15 +16,13 @@ ORDER BY similarity DESC
 
 
 // === Start === 
-MATCH (c:DECISION_CASE)
-OPTIONAL MATCH (c)-[r]->(i)
-WITH {item:id(c), weights: collect(coalesce(id(r), algo.NaN()))} as simiData
+MATCH (c:DECISION_CASE)-[r]->()
+WITH {item:id(c), weights: collect(id(r))} as simiData
 WITH collect(simiData) as data
 CALL algo.similarity.pearson(data, {
     topK: 1, 
     similarityCutoff: 0.1, 
-    write:true,
-    writeRelationshipType: 'PEARSON_SIMILAR'
+    write:true
 })
 
 YIELD nodes, similarityPairs, write, writeRelationshipType, writeProperty, 
@@ -57,8 +54,3 @@ WITH algo.asNode(nodeId) AS cases, community
 RETURN cases.name, community
 ORDER BY community
 // === End ===
-
-
-// Delete the relationship
-MATCH ()-[r:PEARSON_SIMILAR]-() 
-DELETE r

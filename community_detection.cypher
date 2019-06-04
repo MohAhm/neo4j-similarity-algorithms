@@ -10,6 +10,7 @@ RETURN cases.name, community
 ORDER BY community
 // === End ===
 
+CALL algo.louvain("DECISION_CASE", "SIMILAR")
 
 // === Start === 
 // Louvain Modularity
@@ -28,8 +29,8 @@ SET case.communities = communities
 
 
 MATCH (c:DECISION_CASE)
-RETURN c.communities[-1] AS community, collect(c.name) AS cases
-ORDER BY size(cases) DESC
+RETURN c.communities[-1] AS community, collect(c.name) AS cases, count(*) AS size 
+ORDER BY community 
 
 MATCH (c:DECISION_CASE)
 RETURN c.communities[0] AS community, collect(c.name) AS cases
@@ -58,8 +59,7 @@ YIELD nodeId, setId
 
 WITH algo.asNode(nodeId) AS case, setId
 RETURN case.name, setId
-// In our case every node is connected so there is only one community
-// Therefore, this algorithm is not usefull
+ORDER BY setId
 // === End ===
 
 
@@ -68,10 +68,8 @@ RETURN case.name, setId
 CALL algo.scc.stream('DECISION_CASE', 'SIMILAR', {})
 YIELD nodeId, partition
 
-WITH algo.asNode(nodeId) AS cases, partition
-RETURN cases.name, partition
-// "A strongly connected component only exists if there are relationships between nodes in both direction."
-// Not usefull
+WITH partition, algo.asNode(nodeId) AS cases
+RETURN partition, cases.name
 // === End ===
 
 
@@ -83,7 +81,6 @@ YIELD nodeA,nodeB,nodeC
 RETURN  algo.asNode(nodeA).name AS nodeA, 
         algo.asNode(nodeB).name AS nodeB,
         algo.asNode(nodeC).name AS nodeC
-// Not usefull, each node is contained in some triangle
 // === End ===
 
 
